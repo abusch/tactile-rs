@@ -1,16 +1,25 @@
 use data::tiling_type_data;
-use glam::{dmat3, dvec3, DMat3, DVec2};
+use glam::{DMat3, DVec2};
+use iterators::{TilingShapeIterator, TilingShapePartIterator};
+use utils::{fill_matrix, fill_vector, r#match};
 
 mod data;
+mod iterators;
+mod utils;
 
 // Type aliases (TODO should they be newtypes?)
 pub type EdgeID = u8;
 pub type TilingType = u8;
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum EdgeShape {
+    /// Edges that can be of any shape
     J,
+    /// Edges that must look the same after reflecting across their length (like the letter `U`)
     U,
+    /// Edges that must look the same after a 180° rotation (like the letter `S`)
     S,
+    /// Edges that must look the same after both a 180° and a reflection (like the letter `I`)
     I,
 }
 
@@ -77,9 +86,81 @@ impl IsohedralTiling {
         tiling.recompute();
         tiling
     }
+    // accessors
+    
+    pub fn tiling_type(&self) -> u8 {
+        self.tiling_type
+    }
 
-    pub fn shape(&self) -> TilingShapeIterator {
-        todo!()
+    /// Get a reference to the isohedral tiling's num params.
+    pub fn num_params(&self) -> u8 {
+        self.num_params
+    }
+
+    pub fn num_edge_shapes(&self) -> u8 {
+        self.ttd.num_edge_shapes
+    }
+
+    pub fn num_vertices(&self) -> u8 {
+        self.ttd.num_vertices
+    }
+
+    pub fn edge_shape(&self, idx: EdgeID) -> EdgeShape {
+        self.edge_shapes[idx as usize]
+    }
+
+    pub fn vertex(&self, idx: u8) -> &DVec2 {
+        &self.verts[idx as usize]
+    }
+
+    pub fn num_aspects(&self) -> u8 {
+        self.ttd.num_aspects
+    }
+
+    pub fn aspect_transform(&self, idx: u8) -> &DMat3 {
+        &self.aspects[idx as usize]
+    }
+
+    pub fn colour(&self, t1: isize, t2: isize, aspect: u8) -> u8 {
+        let nc = self.colouring[18] as isize;
+
+        let mut mt1 = t1 % nc;
+        if mt1 < 0 {
+            mt1 += nc;
+        }
+        let mut mt2 = t2 % nc;
+        if mt2 < 0 {
+            mt2 += nc;
+        }
+        let mut col = self.colouring[aspect as usize];
+
+        for _ in 0..mt1 {
+            col = self.colouring[12 + col as usize];
+        }
+
+        for _ in 0..mt2 {
+            col = self.colouring[15 + col as usize];
+        }
+
+        col
+     }
+    // iterators
+
+    /// Iterate over all the shapes
+    pub fn shapes(&self) -> TilingShapeIterator {
+        TilingShapeIterator {
+            idx: 0,
+            tiling: self,
+        }
+    }
+
+    /// Iterate over all the shape parts
+    pub fn parts(&self) -> TilingShapePartIterator {
+        TilingShapePartIterator {
+            idx: 0,
+            tiling: self,
+            second: false,
+        }
     }
 
     fn recompute(&mut self) {
@@ -103,71 +184,34 @@ impl IsohedralTiling {
             let ro = self.edge_shape_orientations[2 * idx + 1];
             self.reversals[idx] = fl != ro;
             self.edges[idx] = r#match(&self.verts[idx], &self.verts[(idx + 1) % ntv])
-                * M_ORIENTS[2 * (fl as usize) + (ro as usize)];
+                * utils::M_ORIENTS[2 * (fl as usize) + (ro as usize)];
         }
 
         // Recompute aspect xforms
         data = self.aspect_xform_coefficients;
         let sz = self.ttd.num_aspects as usize;
         for idx in 0..sz {
-            fill_matrix(data, &self.parameters, self.num_params, &mut self.aspects[idx]);
+            fill_matrix(
+                data,
+                &self.parameters,
+                self.num_params,
+                &mut self.aspects[idx],
+            );
             data = &data[(6 * (self.num_params as usize + 1))..];
         }
 
         // Recompute translation vectors
         data = self.translation_vertex_coefficients;
         fill_vector(data, &self.parameters, self.num_params, &mut self.t1);
-        fill_vector(&data[(2 * (self.num_params as usize + 1))..], &self.parameters, self.num_params, &mut self.t1);
+        fill_vector(
+            &data[(2 * (self.num_params as usize + 1))..],
+            &self.parameters,
+            self.num_params,
+            &mut self.t1,
+        );
     }
 }
 
-// Utility functions
-fn ddot(coeffs: &[f64], params: &[f64], np: u8) -> f64 {
-    let mut total = 0.0;
-    for idx in 0..np as usize {
-        total += coeffs[idx] * params[idx];
-    }
-    // Affine term
-    total += coeffs[np as usize];
-    total
-}
-
-fn fill_vector(coeffs: &[f64], params: &[f64], np: u8, v: &mut DVec2) {
-    v.x = ddot(coeffs, params, np);
-    v.y = ddot(&coeffs[(np as usize + 1)..], params, np);
-}
-
-fn fill_matrix(coeffs: &[f64], params: &[f64], np: u8, m: &mut DMat3) {
-    let mut coeffs = coeffs;
-    for row in 0..2 {
-        for col in 0..3 {
-            m.col_mut(col)[row] = ddot(coeffs, params, np);
-            coeffs = &coeffs[(np as usize + 1)..];
-        }
-    }
-    m.col_mut(0)[2] = 0.0;
-    m.col_mut(1)[2] = 0.0;
-    m.col_mut(2)[2] = 1.0;
-}
-
-fn r#match(p: &DVec2, q: &DVec2) -> DMat3 {
-    dmat3(
-        dvec3(q.x - p.x, q.y - p.y, 0.0),
-        dvec3(p.y - q.y, q.x - p.x, 0.0),
-        dvec3(p.x, p.y, 1.0),
-    )
-}
-
-lazy_static::lazy_static! {
-static ref M_ORIENTS: [DMat3; 4] = [
-    dmat3(dvec3(1.0, 0.0, 0.0), dvec3(0.0, 1.0, 0.0), dvec3(0.0, 0.0, 1.0)),   // IDENTITY
-    dmat3(dvec3(-1.0, 0.0, 0.0), dvec3(0.0, -1.0, 0.0), dvec3(1.0, 0.0, 1.0)), // ROT
-    dmat3(dvec3(-1.0, 0.0, 0.0), dvec3(0.0, 1.0, 0.0), dvec3(1.0, 0.0, 1.0)),  // FLIP
-    dmat3(dvec3(1.0, 0.0, 0.0), dvec3(0.0, -1.0, 0.0), dvec3(0.0, 0.0, 1.0)),  // ROFL
-];
-}
-
-pub struct TilingShapeIterator {}
 
 #[cfg(test)]
 mod tests {
