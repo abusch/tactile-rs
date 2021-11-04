@@ -87,7 +87,7 @@ impl IsohedralTiling {
         tiling
     }
     // accessors
-    
+
     pub fn tiling_type(&self) -> u8 {
         self.tiling_type
     }
@@ -143,7 +143,15 @@ impl IsohedralTiling {
         }
 
         col
-     }
+    }
+
+    pub fn t1(&self) -> &DVec2 {
+        &self.t1
+    }
+
+    pub fn t2(&self) -> &DVec2 {
+        &self.t2
+    }
     // iterators
 
     /// Iterate over all the shapes
@@ -211,7 +219,6 @@ impl IsohedralTiling {
         );
     }
 }
-
 
 #[cfg(test)]
 mod tests {
