@@ -1,5 +1,4 @@
-use glam::{dmat3, dvec3, DMat3, DVec2};
-use lazy_static::lazy_static;
+use glam::{const_dmat3, dmat3, dvec3, DMat3, DVec2};
 
 // Utility functions
 pub(crate) fn ddot(coeffs: &[f64], params: &[f64], np: u8) -> f64 {
@@ -38,25 +37,19 @@ pub(crate) fn r#match(p: &DVec2, q: &DVec2) -> DMat3 {
     )
 }
 
-lazy_static! {
-pub(crate) static ref M_ORIENTS: [DMat3; 4] = [
-    dmat3(dvec3(1.0, 0.0, 0.0), dvec3(0.0, 1.0, 0.0), dvec3(0.0, 0.0, 1.0)),   // IDENTITY
-    dmat3(dvec3(-1.0, 0.0, 0.0), dvec3(0.0, -1.0, 0.0), dvec3(1.0, 0.0, 1.0)), // ROT
-    dmat3(dvec3(-1.0, 0.0, 0.0), dvec3(0.0, 1.0, 0.0), dvec3(1.0, 0.0, 1.0)),  // FLIP
-    dmat3(dvec3(1.0, 0.0, 0.0), dvec3(0.0, -1.0, 0.0), dvec3(0.0, 0.0, 1.0)),  // ROFL
+pub(crate) static M_ORIENTS: [DMat3; 4] = [
+    const_dmat3!([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]), // IDENTITY
+    const_dmat3!([-1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [1.0, 0.0, 1.0]), // ROT
+    const_dmat3!([-1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 1.0]), // FLIP
+    const_dmat3!([1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, 1.0]), // ROFL
 ];
-}
 
-lazy_static! {
-pub(crate) static ref TSPI_U: [DMat3; 2] = [
-    dmat3(dvec3(0.5, 0.0, 0.0), dvec3(0.0, 0.5, 0.0), dvec3(0.0, 0.0, 1.0)),
-    dmat3(dvec3(-0.5, 0.0, 0.0), dvec3(0.0, 0.5, 0.0), dvec3(1.0, 0.0, 1.0)),
+pub(crate) static TSPI_U: [DMat3; 2] = [
+    const_dmat3!([0.5, 0.0, 0.0], [0.0, 0.5, 0.0], [0.0, 0.0, 1.0]),
+    const_dmat3!([-0.5, 0.0, 0.0], [0.0, 0.5, 0.0], [1.0, 0.0, 1.0]),
 ];
-}
 
-lazy_static! {
-pub(crate) static ref TSPI_S: [DMat3; 2] = [
-    dmat3(dvec3(0.5, 0.0, 0.0), dvec3(0.0, 0.5, 0.0), dvec3(0.0, 0.0, 1.0)),
-    dmat3(dvec3(-0.5, 0.0, 0.0), dvec3(0.0, -0.5, 0.0), dvec3(1.0, 0.0, 1.0)),
+pub(crate) static TSPI_S: [DMat3; 2] = [
+    const_dmat3!([0.5, 0.0, 0.0], [0.0, 0.5, 0.0], [0.0, 0.0, 1.0]),
+    const_dmat3!([-0.5, 0.0, 0.0], [0.0, -0.5, 0.0], [1.0, 0.0, 1.0]),
 ];
-}
