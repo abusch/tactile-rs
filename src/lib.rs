@@ -1,6 +1,6 @@
 use data::tiling_type_data;
-use glam::{DMat3, DVec2};
-use iterators::{TilingShapeIterator, TilingShapePartIterator};
+use glam::{dvec2, DMat3, DVec2};
+use iterators::{FillAlgorithm, TilingShapeIterator, TilingShapePartIterator};
 use utils::{fill_matrix, fill_vector, r#match};
 
 mod data;
@@ -23,6 +23,7 @@ pub enum EdgeShape {
     I,
 }
 
+#[derive(Debug, Default)]
 pub struct TilingTypeData {
     num_params: u8,
     num_aspects: u8,
@@ -39,6 +40,11 @@ pub struct TilingTypeData {
     colouring: &'static [u8],
 }
 
+lazy_static::lazy_static! {
+    static ref DEFAULT_TTD: TilingTypeData = TilingTypeData::default();
+}
+
+#[derive(Debug, Default)]
 pub struct IsohedralTiling {
     tiling_type: TilingType,
     num_params: u8,
@@ -50,41 +56,25 @@ pub struct IsohedralTiling {
     t1: DVec2,
     t2: DVec2,
     ttd: &'static TilingTypeData,
-    tiling_vertex_coefficients: &'static [f64],
-    edge_shape_ids: &'static [EdgeID],
-    edge_shapes: &'static [EdgeShape],
-    edge_shape_orientations: &'static [bool],
-    aspect_xform_coefficients: &'static [f64],
-    translation_vertex_coefficients: &'static [f64],
-    colouring: &'static [u8],
 }
 
 impl IsohedralTiling {
     pub fn new(ihtype: TilingType) -> Self {
+        let mut tiling = Self::default();
+        tiling.reset(ihtype);
+
+        tiling
+    }
+
+    pub fn reset(&mut self, ihtype: TilingType) {
+        self.tiling_type = ihtype;
         let ttd = &tiling_type_data[ihtype as usize];
 
-        let mut tiling = IsohedralTiling {
-            tiling_type: ihtype,
-            num_params: ttd.num_params,
-            parameters: [0.0; 6],
-            verts: [DVec2::default(); 6],
-            edges: [DMat3::default(); 6],
-            reversals: [false; 6],
-            aspects: [DMat3::default(); 12],
-            t1: DVec2::default(),
-            t2: DVec2::default(),
-            ttd,
-            tiling_vertex_coefficients: ttd.tiling_vertex_coeffs,
-            edge_shape_ids: ttd.edge_shape_ids,
-            edge_shapes: ttd.edge_shapes,
-            edge_shape_orientations: ttd.edge_orientations,
-            aspect_xform_coefficients: ttd.aspect_xform_coeffs,
-            translation_vertex_coefficients: ttd.translation_vertex_coeffs,
-            colouring: ttd.colouring,
-        };
-        tiling.parameters[..ttd.num_params as usize].copy_from_slice(ttd.default_params);
-        tiling.recompute();
-        tiling
+        self.num_params = ttd.num_params;
+        self.ttd = ttd;
+
+        self.parameters[..ttd.num_params as usize].copy_from_slice(ttd.default_params);
+        self.recompute();
     }
     // accessors
 
@@ -106,7 +96,7 @@ impl IsohedralTiling {
     }
 
     pub fn edge_shape(&self, idx: EdgeID) -> EdgeShape {
-        self.edge_shapes[idx as usize]
+        self.ttd.edge_shapes[idx as usize]
     }
 
     pub fn vertex(&self, idx: u8) -> &DVec2 {
@@ -117,12 +107,12 @@ impl IsohedralTiling {
         self.ttd.num_aspects
     }
 
-    pub fn aspect_transform(&self, idx: u8) -> &DMat3 {
-        &self.aspects[idx as usize]
+    pub fn aspect_transform(&self, idx: usize) -> &DMat3 {
+        &self.aspects[idx]
     }
 
-    pub fn colour(&self, t1: isize, t2: isize, aspect: u8) -> u8 {
-        let nc = self.colouring[18] as isize;
+    pub fn colour(&self, t1: isize, t2: isize, aspect: usize) -> u8 {
+        let nc = self.ttd.colouring[18] as isize;
 
         let mut mt1 = t1 % nc;
         if mt1 < 0 {
@@ -132,14 +122,14 @@ impl IsohedralTiling {
         if mt2 < 0 {
             mt2 += nc;
         }
-        let mut col = self.colouring[aspect as usize];
+        let mut col = self.ttd.colouring[aspect];
 
         for _ in 0..mt1 {
-            col = self.colouring[12 + col as usize];
+            col = self.ttd.colouring[12 + col as usize];
         }
 
         for _ in 0..mt2 {
-            col = self.colouring[15 + col as usize];
+            col = self.ttd.colouring[15 + col as usize];
         }
 
         col
@@ -171,11 +161,21 @@ impl IsohedralTiling {
         }
     }
 
+    pub fn fill_region(&self, xmin: f64, ymin: f64, xmax: f64, ymax: f64) -> FillAlgorithm<'_> {
+        FillAlgorithm::new(
+            self,
+            dvec2(xmin, ymin),
+            dvec2(xmax, ymin),
+            dvec2(xmax, ymax),
+            dvec2(xmin, ymax),
+        )
+    }
+
     fn recompute(&mut self) {
         let ntv = self.ttd.num_vertices as usize;
 
         // Recompute tiling vertex locations
-        let mut data = self.tiling_vertex_coefficients;
+        let mut data = self.ttd.tiling_vertex_coeffs;
         for idx in 0..ntv {
             fill_vector(
                 data,
@@ -188,15 +188,15 @@ impl IsohedralTiling {
 
         // Recompute edge transforms and reversals from orientation information
         for idx in 0..ntv {
-            let fl = self.edge_shape_orientations[2 * idx];
-            let ro = self.edge_shape_orientations[2 * idx + 1];
+            let fl = self.ttd.edge_orientations[2 * idx];
+            let ro = self.ttd.edge_orientations[2 * idx + 1];
             self.reversals[idx] = fl != ro;
             self.edges[idx] = r#match(&self.verts[idx], &self.verts[(idx + 1) % ntv])
                 * utils::M_ORIENTS[2 * (fl as usize) + (ro as usize)];
         }
 
         // Recompute aspect xforms
-        data = self.aspect_xform_coefficients;
+        data = self.ttd.aspect_xform_coeffs;
         let sz = self.ttd.num_aspects as usize;
         for idx in 0..sz {
             fill_matrix(
@@ -209,22 +209,36 @@ impl IsohedralTiling {
         }
 
         // Recompute translation vectors
-        data = self.translation_vertex_coefficients;
+        data = self.ttd.translation_vertex_coeffs;
         fill_vector(data, &self.parameters, self.num_params, &mut self.t1);
         fill_vector(
             &data[(2 * (self.num_params as usize + 1))..],
             &self.parameters,
             self.num_params,
-            &mut self.t1,
+            &mut self.t2,
         );
+    }
+}
+
+impl Default for &'static TilingTypeData {
+    fn default() -> Self {
+        &DEFAULT_TTD
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::IsohedralTiling;
+
     #[test]
     fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
+        let tiling = IsohedralTiling::new(1);
+        println!("{:?}", tiling.aspect_transform(1).to_cols_array());
+        let mut cnt = 0;
+        for v in tiling.fill_region(-5.0, -5.0, 5.0, 5.0).iter() {
+            println!("t1={}, t2={}, transform={:?}", v.t1, v.t2, v.transform.to_cols_array());
+            cnt += 1;
+        }
+        println!("Got {} tiles", cnt);
     }
 }
