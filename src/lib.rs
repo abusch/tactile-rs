@@ -1,16 +1,29 @@
-use data::tiling_type_data;
+//! 
 use glam::{dvec2, DMat3, DVec2};
-use iterators::{FillAlgorithm, TilingShapeIterator, TilingShapePartIterator};
-use utils::{fill_matrix, fill_vector, r#match};
 
-mod data;
+pub mod data;
 mod iterators;
 mod utils;
 
+use data::{tiling_type_data, TilingTypeData};
+use iterators::{FillAlgorithm, TilingShapeIterator, TilingShapePartIterator};
+use utils::{fill_matrix, fill_vector, r#match};
+
+pub use data::get_tiling_type;
+
 // Type aliases (TODO should they be newtypes?)
 pub type EdgeID = u8;
-pub type TilingType = u8;
 
+#[derive(Debug, Default, Clone, Copy)]
+pub struct TilingType(usize);
+
+impl std::fmt::Display for TilingType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "IH{:02}", self.0)
+    }
+}
+
+/// Represents the "shape" of an edge, i.e. the set of constraints that this edge must follow.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum EdgeShape {
     /// Edges that can be of any shape
@@ -21,27 +34,6 @@ pub enum EdgeShape {
     S,
     /// Edges that must look the same after both a 180° and a reflection (like the letter `I`)
     I,
-}
-
-#[derive(Debug, Default)]
-pub struct TilingTypeData {
-    num_params: u8,
-    num_aspects: u8,
-    num_vertices: u8,
-    num_edge_shapes: u8,
-
-    edge_shapes: &'static [EdgeShape],
-    edge_orientations: &'static [bool],
-    edge_shape_ids: &'static [u8],
-    default_params: &'static [f64],
-    tiling_vertex_coeffs: &'static [f64],
-    translation_vertex_coeffs: &'static [f64],
-    aspect_xform_coeffs: &'static [f64],
-    colouring: &'static [u8],
-}
-
-lazy_static::lazy_static! {
-    static ref DEFAULT_TTD: TilingTypeData = TilingTypeData::default();
 }
 
 #[derive(Debug, Default)]
@@ -68,7 +60,7 @@ impl IsohedralTiling {
 
     pub fn reset(&mut self, ihtype: TilingType) {
         self.tiling_type = ihtype;
-        let ttd = &tiling_type_data[ihtype as usize];
+        let ttd = &tiling_type_data[ihtype.0];
 
         self.num_params = ttd.num_params;
         self.ttd = ttd;
@@ -78,7 +70,7 @@ impl IsohedralTiling {
     }
     // accessors
 
-    pub fn tiling_type(&self) -> u8 {
+    pub fn tiling_type(&self) -> TilingType {
         self.tiling_type
     }
 
@@ -171,6 +163,19 @@ impl IsohedralTiling {
         )
     }
 
+    pub fn parameters(&self, params: &mut [f64; 6]) {
+        params.copy_from_slice(&self.parameters);
+    }
+
+    pub fn set_parameters(&mut self, params: &[f64; 6]) {
+        self.parameters.copy_from_slice(params);
+        self.recompute();
+    }
+
+    pub fn vertices(&self) -> &[DVec2] {
+        &self.verts[0..self.num_vertices() as usize]
+    }
+
     fn recompute(&mut self) {
         let ntv = self.ttd.num_vertices as usize;
 
@@ -220,23 +225,22 @@ impl IsohedralTiling {
     }
 }
 
-impl Default for &'static TilingTypeData {
-    fn default() -> Self {
-        &DEFAULT_TTD
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::IsohedralTiling;
+    use crate::*;
 
     #[test]
     fn it_works() {
-        let tiling = IsohedralTiling::new(1);
+        let tiling = IsohedralTiling::new(TilingType(1));
         println!("{:?}", tiling.aspect_transform(1).to_cols_array());
         let mut cnt = 0;
         for v in tiling.fill_region(-5.0, -5.0, 5.0, 5.0).iter() {
-            println!("t1={}, t2={}, transform={:?}", v.t1, v.t2, v.transform.to_cols_array());
+            println!(
+                "t1={}, t2={}, transform={:?}",
+                v.t1,
+                v.t2,
+                v.transform.to_cols_array()
+            );
             cnt += 1;
         }
         println!("Got {} tiles", cnt);

@@ -175,7 +175,7 @@ impl<'tiling> Iterator for FillRegionIterator<'tiling> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {
-            return None;
+            None
         } else {
             let item = FillRegionStep {
                 t1: self.x as isize,
@@ -232,7 +232,7 @@ impl<'tiling> FillRegionIterator<'tiling> {
     }
 
     fn transform(&self) -> DMat3 {
-        let mut m = self.algo.tiling.aspect_transform(self.asp).clone();
+        let mut m = *self.algo.tiling.aspect_transform(self.asp);
         let t1 = self.algo.tiling.t1();
         let t2 = self.algo.tiling.t2();
 

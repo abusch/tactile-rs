@@ -1,5 +1,7 @@
 [package]
 name = "tactile"
+description = "A library for representing, manipulating, and drawing isohedral tilings on the plane."
+authors = ["Antoine Büsch <antoine.busch@gmail.com>"]
 version = "0.1.0"
 edition = "2021"
 
@@ -7,4 +9,3 @@ edition = "2021"
 
 [dependencies]
 glam = "0.20"
-lazy_static = "1"
