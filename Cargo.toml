@@ -13,3 +13,7 @@ edition = "2021"
 
 [dependencies]
 glam = "0.20"
+
+[dev-dependencies]
+crossterm = "0.20"
+tui = {version = "0.16", features=["crossterm"]}
