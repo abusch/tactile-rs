@@ -139,6 +139,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .split(f.size());
 
     // Tiling canvas
+    let aspect = chunks[0].height as f64 / chunks[0].width as f64;
+    let xbound = app.bound;
+    let ybound = app.bound * aspect * 2.0;
     let canvas = Canvas::default()
         .block(Block::default().borders(Borders::ALL).title(format!(
             " Tiling type: {} ",
@@ -147,14 +150,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .paint(|ctx| {
             for tile in &app
                 .tiling
-                .fill_region(-app.bound, -app.bound, app.bound, app.bound)
+                .fill_region(-xbound, -ybound, xbound, ybound)
             {
                 let c = app.tiling.colour(tile.t1, tile.t2, tile.aspect);
                 draw_tile(ctx, app, &tile.transform, colors[c as usize]);
             }
         })
-        .x_bounds([-app.bound, app.bound])
-        .y_bounds([-app.bound, app.bound]);
+        .x_bounds([-xbound, xbound])
+        .y_bounds([-ybound, ybound]);
     f.render_widget(canvas, chunks[0]);
 
     // Status bar
