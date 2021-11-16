@@ -1,4 +1,8 @@
 # tactile-rs
+[![Crate Status](https://img.shields.io/crates/v/tactile.svg)](https://crates.io/crates/tactile)
+[![Docs Status](https://docs.rs/tactile/badge.svg)](https://docs.rs/crate/tactile/)
+[![dependency status](https://deps.rs/repo/github/abusch/tactile-rs/status.svg)](https://deps.rs/repo/github/abusch/tactile-rs)
+
 
 This library is a pure Rust port of [tactile](https://github.com/isohedral/tactile), a library for representing, manipulating, and drawing isohedral tilings on the plane created by [Craig S. Kaplan](https://github.com/isohedral) based on his [PhD thesis](https://cs.uwaterloo.ca/~csk/other/phd/).
 
