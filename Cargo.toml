@@ -3,6 +3,10 @@ name = "tactile"
 description = "A library for representing, manipulating, and drawing isohedral tilings on the plane."
 authors = ["Antoine Büsch <antoine.busch@gmail.com>"]
 version = "0.1.0"
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/abusch/tactile-rs"
+keywords = ["math", "graphics", "tiling", "isohedral"]
+categories = ["graphics", "mathematics"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
