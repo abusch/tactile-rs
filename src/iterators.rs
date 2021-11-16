@@ -6,6 +6,7 @@ use crate::{EdgeShape, IsohedralTiling};
 
 const EPSILON: f64 = 1e-7;
 
+#[derive(Debug)]
 pub struct Shape {
     t: DMat3,
     id: usize,
@@ -41,6 +42,7 @@ impl Shape {
     }
 }
 
+#[derive(Debug)]
 pub struct TilingShapeIterator<'tiling> {
     pub(crate) idx: usize,
     pub(crate) tiling: &'tiling IsohedralTiling,
@@ -68,6 +70,7 @@ impl<'tiling> Iterator for TilingShapeIterator<'tiling> {
     }
 }
 
+#[derive(Debug)]
 pub struct TilingShapePartIterator<'tiling> {
     pub(crate) idx: usize,
     pub(crate) second: bool,

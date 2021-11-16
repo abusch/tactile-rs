@@ -129,6 +129,11 @@ impl IsohedralTiling {
         &self.aspects[idx]
     }
 
+    /// Computes a colour index used for tiling a region.
+    ///
+    /// The return value can be 0, 1, 2, representing one of 3 possible colours. The parameters `t1`,
+    /// `t2`, and `aspect` can be obtained while iterating over the tiles of a region. See
+    /// [`iterators::FillRegionIterator`].
     pub fn colour(&self, t1: isize, t2: isize, aspect: usize) -> u8 {
         let nc = self.ttd.colouring[18] as isize;
 
@@ -153,17 +158,19 @@ impl IsohedralTiling {
         col
     }
 
+    /// The first translation vector.
     pub fn t1(&self) -> &DVec2 {
         &self.t1
     }
 
+    /// The second translation vector.
     pub fn t2(&self) -> &DVec2 {
         &self.t2
     }
 
     /// # Iterators
 
-    /// Iterate over all the shapes
+    /// Iterate over all the edge shapes of the prototile.
     pub fn shapes(&self) -> TilingShapeIterator {
         TilingShapeIterator {
             idx: 0,
@@ -171,7 +178,7 @@ impl IsohedralTiling {
         }
     }
 
-    /// Iterate over all the shape parts
+    /// Iterate over all the shape parts of the prototile.
     pub fn parts(&self) -> TilingShapePartIterator {
         TilingShapePartIterator {
             idx: 0,
@@ -180,6 +187,10 @@ impl IsohedralTiling {
         }
     }
 
+    /// Helper to fill a region of the plan with tiles.
+    ///
+    /// The  returned object can be turned into an iteretor where each element gives you the necessary
+    /// transform to apply to the prototile.
     pub fn fill_region(&self, xmin: f64, ymin: f64, xmax: f64, ymax: f64) -> FillAlgorithm<'_> {
         FillAlgorithm::new(
             self,
@@ -190,15 +201,25 @@ impl IsohedralTiling {
         )
     }
 
+    /// Return all the vertex parameters.
+    ///
+    /// Note: not all tiling types have the same number of parameters. Only the first `n` values of the
+    /// returned array are valid, where `n` is the value returned by [`#num_params].
     pub fn parameters(&self, params: &mut [f64; 6]) {
         params.copy_from_slice(&self.parameters);
     }
 
+    /// Set the vertex parameters.
+    ///
+    /// See also: [`#parameters`]
     pub fn set_parameters(&mut self, params: &[f64; 6]) {
         self.parameters.copy_from_slice(params);
         self.recompute();
     }
 
+    /// Return the vertices for this prototile.
+    ///
+    /// See also: [`#parameters`]
     pub fn vertices(&self) -> &[DVec2] {
         &self.verts[0..self.num_vertices()]
     }
