@@ -358,6 +358,16 @@ impl<'tiling> FillAlgorithm<'tiling> {
     }
 }
 
+impl<'algo, 'tiling> IntoIterator for &'algo FillAlgorithm<'tiling> {
+    type Item = FillRegionStep;
+
+    type IntoIter = FillRegionIterator<'algo>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
 fn sample_at_height(p: &DVec2, q: &DVec2, y: f64) -> DVec2 {
     let t = (y - p.y) / (q.y - p.y);
     dvec2((1.0 - t) * p.x + t * q.x, y)
