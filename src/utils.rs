@@ -1,27 +1,27 @@
 use glam::{const_dmat3, dmat3, dvec3, DMat3, DVec2};
 
 // Utility functions
-pub(crate) fn ddot(coeffs: &[f64], params: &[f64], np: u8) -> f64 {
+pub(crate) fn ddot(coeffs: &[f64], params: &[f64], np: usize) -> f64 {
     let mut total = 0.0;
-    for idx in 0..np as usize {
+    for idx in 0..np {
         total += coeffs[idx] * params[idx];
     }
     // Affine term
-    total += coeffs[np as usize];
+    total += coeffs[np];
     total
 }
 
-pub(crate) fn fill_vector(coeffs: &[f64], params: &[f64], np: u8, v: &mut DVec2) {
+pub(crate) fn fill_vector(coeffs: &[f64], params: &[f64], np: usize, v: &mut DVec2) {
     v.x = ddot(coeffs, params, np);
-    v.y = ddot(&coeffs[(np as usize + 1)..], params, np);
+    v.y = ddot(&coeffs[(np + 1)..], params, np);
 }
 
-pub(crate) fn fill_matrix(coeffs: &[f64], params: &[f64], np: u8, m: &mut DMat3) {
+pub(crate) fn fill_matrix(coeffs: &[f64], params: &[f64], np: usize, m: &mut DMat3) {
     let mut coeffs = coeffs;
     for row in 0..2 {
         for col in 0..3 {
             m.col_mut(col)[row] = ddot(coeffs, params, np);
-            coeffs = &coeffs[(np as usize + 1)..];
+            coeffs = &coeffs[(np + 1)..];
         }
     }
     m.col_mut(0)[2] = 0.0;

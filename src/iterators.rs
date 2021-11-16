@@ -8,20 +8,20 @@ const EPSILON: f64 = 1e-7;
 
 pub struct Shape {
     t: DMat3,
-    id: u8,
+    id: usize,
     shape: EdgeShape,
     rev: bool,
     second: bool,
 }
 
 impl Shape {
-    /// Get a reference to the shape data's t.
-    pub fn t(&self) -> DMat3 {
+    /// Get a reference to the shape data's transform matrix.
+    pub fn transform(&self) -> DMat3 {
         self.t
     }
 
     /// Get a reference to the shape data's id.
-    pub fn id(&self) -> u8 {
+    pub fn id(&self) -> usize {
         self.id
     }
 
@@ -31,7 +31,7 @@ impl Shape {
     }
 
     /// Get a reference to the shape data's rev.
-    pub fn is_reversed(&self) -> bool {
+    pub fn reversed(&self) -> bool {
         self.rev
     }
 
@@ -50,12 +50,12 @@ impl<'tiling> Iterator for TilingShapeIterator<'tiling> {
     type Item = Shape;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.idx < self.tiling.num_vertices() as usize {
+        if self.idx < self.tiling.num_vertices() {
             let an_id = self.tiling.ttd.edge_shape_ids[self.idx];
             let data = Shape {
                 t: self.tiling.edges[self.idx],
                 id: an_id,
-                shape: self.tiling.ttd.edge_shapes[an_id as usize],
+                shape: self.tiling.ttd.edge_shapes[an_id],
                 rev: self.tiling.reversals[self.idx],
                 second: false,
             };
@@ -78,9 +78,9 @@ impl<'tiling> Iterator for TilingShapePartIterator<'tiling> {
     type Item = Shape;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.idx < self.tiling.num_vertices() as usize {
+        if self.idx < self.tiling.num_vertices() {
             let an_id = self.tiling.ttd.edge_shape_ids[self.idx];
-            let shp = self.tiling.ttd.edge_shapes[an_id as usize];
+            let shp = self.tiling.ttd.edge_shapes[an_id];
 
             if (shp == EdgeShape::J) || (shp == EdgeShape::I) {
                 let data = Shape {
@@ -158,14 +158,14 @@ impl<'tiling> Debug for FillRegionIterator<'tiling> {
         if self.done {
             f.write_str("[done]")
         } else {
-        f.debug_struct("FillRegionIterator")
-            .field("x", &self.x)
-            .field("y", &self.y)
-            .field("xlo", &self.xlo)
-            .field("xhi", &self.xhi)
-            .field("call_idx", &self.call_idx)
-            .field("asp", &self.asp)
-            .finish()
+            f.debug_struct("FillRegionIterator")
+                .field("x", &self.x)
+                .field("y", &self.y)
+                .field("xlo", &self.xlo)
+                .field("xhi", &self.xhi)
+                .field("call_idx", &self.call_idx)
+                .field("asp", &self.asp)
+                .finish()
         }
     }
 }
@@ -208,7 +208,7 @@ impl<'tiling> FillRegionIterator<'tiling> {
 
     fn update_state(&mut self) {
         self.asp += 1;
-        if self.asp >= self.algo.tiling.num_aspects() as usize {
+        if self.asp >= self.algo.tiling.num_aspects() {
             self.asp = 0;
             self.x += 1.0;
             if self.x >= (self.xhi + EPSILON) {
